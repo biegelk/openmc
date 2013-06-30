@@ -184,7 +184,6 @@ contains
 !===============================================================================
 
   subroutine collision()
-
     ! Store pre-collision particle properties
     p % last_wgt = p % wgt
     p % last_E   = p % E
@@ -246,6 +245,7 @@ contains
     real(8) :: prob         ! cumulative probability
     real(8) :: cutoff       ! random number
     real(8) :: atom_density ! atom density of nuclide in atom/b-cm
+    integer :: rxn_result   ! indicates delayed or prompt fission
     type(Material), pointer :: mat => null()
     type(Nuclide),  pointer :: nuc => null()
     type(Reaction), pointer :: rxn => null()
@@ -333,6 +333,8 @@ contains
     ! ==========================================================================
     ! FISSION EVENTS (ANALOG) OR BANK EXPECTED FISSION SITES (IMPLICIT)
 
+    !write (*,*) '2 physics 335: sample for fission event'
+
     if (nuc % fissionable) then
       ! If survival biasing is turned on, then no fission events actually occur
       ! since absorption is treated implicitly. However, we still need to bank
@@ -354,7 +356,7 @@ contains
 
         if (prob > cutoff) then
           rxn => nuc % reactions(nuc % index_fission(1))
-          call create_fission_sites(i_nuclide, rxn)
+          call create_fission_sites(i_nuclide, rxn, rxn_result)
 
           ! With no survival biasing, the particle is absorbed and so its
           ! life is over
@@ -367,7 +369,8 @@ contains
                  material_xs % nu_fission / material_xs % absorption
 
             p % alive = .false.
-            p % event = EVENT_FISSION
+!            p % event = EVENT_FISSION
+            p % event = rxn_result
             p % event_MT = rxn % MT
             return
           end if
@@ -392,9 +395,9 @@ contains
             prob = prob + micro_xs(i_nuclide) % fission
           end if
 
-          ! Create fission bank sites if fission occus
+          ! Create fission bank sites if fission occurs
           if (prob > cutoff) then
-            call create_fission_sites(i_nuclide, rxn)
+            call create_fission_sites(i_nuclide, rxn, rxn_result)
 
             if (survival_biasing) then
               ! Since a fission reaction has been sampled, we can exit this
@@ -411,7 +414,11 @@ contains
               ! With no survival biasing, the particle is absorbed and so
               ! its life is over
               p % alive = .false.
-              p % event = EVENT_FISSION
+
+              ! TEST: putting p % event for delayed and prompt fission into
+              ! the subroutine create_fission_sites
+!              p % event = EVENT_FISSION
+              p % event = rxn_result
               p % event_MT = rxn % MT
               return
             end if
@@ -491,6 +498,7 @@ contains
         ! Skip fission reactions
         if (rxn % MT == N_FISSION .or. rxn % MT == N_F .or. rxn % MT == N_NF &
              .or. rxn % MT == N_2NF .or. rxn % MT == N_3NF) cycle
+        !write (*,*) '14 physics 495: skip fission reactions'
 
         ! some materials have gas production cross sections with MT > 200 that
         ! are duplicates. Also MT=4 is total level inelastic scattering which
@@ -857,10 +865,11 @@ contains
 ! neutrons produced from fission and creates appropriate bank sites.
 !===============================================================================
 
-  subroutine create_fission_sites(i_nuclide, rxn)
+  subroutine create_fission_sites(i_nuclide, rxn, rxn_result)
 
     integer, intent(in)     :: i_nuclide
     type(Reaction), pointer :: rxn
+    integer, intent(out) :: rxn_result
 
     integer :: i            ! loop index
     integer :: j            ! index on nu energy grid / precursor group
@@ -886,6 +895,8 @@ contains
     type(Nuclide),    pointer :: nuc
     type(DistEnergy), pointer :: edist => null()
 
+    !write (*,*) '5 physics 891: create fission sites'
+
     ! Get pointer to nuclide
     nuc => nuclides(i_nuclide)
 
@@ -900,6 +911,7 @@ contains
 
     ! Determine delayed neutron fraction
     beta = nu_d / nu_t
+!    write (*,*) beta
 
     ! TODO: Heat generation from fission
 
@@ -971,6 +983,10 @@ contains
           yield = interpolate_tab1(nuc % nu_d_precursor_data( &
                lc+1:lc+2+2*NR+2*NE), E)
 
+          ! IFIO: yield = probability upper bound for sampling a delayed neutron
+          ! from precursor group j at a given energy
+          ! write (*,*) "for group", j, " yield =", yield
+
           ! Check if this group is sampled
           prob = prob + yield
           if (xi < prob) exit
@@ -1010,6 +1026,10 @@ contains
           end if
         end do
 
+      rxn_result = EVENT_DELAYED_FISSION
+!      write (*,*) 'had a delayed fission event!'
+!      write (*,*) rxn_result
+
       else
         ! ====================================================================
         ! PROMPT NEUTRON SAMPLED
@@ -1036,6 +1056,8 @@ contains
             call fatal_error()
           end if
         end do
+
+        rxn_result = EVENT_PROMPT_FISSION
 
       end if
 
@@ -1595,6 +1617,8 @@ contains
     case (7)
       ! =======================================================================
       ! MAXWELL FISSION SPECTRUM
+
+      write (*,*) '16 physics 1605: maxwell fission spectrum'
 
       ! read number of interpolation regions and incoming energies 
       NR = int(edist % data(1))

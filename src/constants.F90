@@ -249,7 +249,9 @@ module constants
        EVENT_LATTICE = -1, &
        EVENT_SCATTER =  1, &
        EVENT_ABSORB  =  2, &
-       EVENT_FISSION =  3 
+       EVENT_FISSION =  3, &
+       EVENT_DELAYED_FISSION = 4, &
+       EVENT_PROMPT_FISSION = 5 
 
   ! Tally score type
   integer, parameter :: N_SCORE_TYPES = 14
@@ -267,8 +269,9 @@ module constants
        SCORE_NU_FISSION    = -11, & ! neutron production rate
        SCORE_KAPPA_FISSION = -12, & ! fission energy production rate
        SCORE_CURRENT       = -13, & ! partial current
-       SCORE_EVENTS        = -14    ! number of events
-       
+       SCORE_EVENTS        = -14, & ! number of events
+       SCORE_BETA          = -15    ! beta
+
   ! Maximum scattering order supported
   integer, parameter :: SCATT_ORDER_MAX = 10
   character(len=*), parameter :: SCATT_ORDER_MAX_PNSTR = "scatter-p10"

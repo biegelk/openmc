@@ -1920,7 +1920,7 @@ contains
             end if
             score_name = "scatter-n"
           end if
-          
+
           select case (score_name)
           case ('flux')
             ! Prohibit user from tallying flux for an individual nuclide
@@ -1997,12 +1997,22 @@ contains
               call fatal_error()
             end if
           case ('fission')
+            write (*,*) '1 input_xml 2000: found specified fission tally'
             t % score_bins(j) = SCORE_FISSION
             if (t % find_filter(FILTER_ENERGYOUT) > 0) then
               message = "Cannot tally fission rate with an outgoing &
                    &energy filter."
               call fatal_error()
             end if
+          case ('beta')
+            t % score_bins(j) = SCORE_BETA
+            if (t % find_filter(FILTER_ENERGYOUT) > 0) then
+              message = "Cannot tally beta with an outgoing energy &
+                   &filter."
+            call fatal_error()
+            end if
+            ! Set tally estimator to analog
+            t % estimator = ESTIMATOR_ANALOG
           case ('nu-fission')
             t % score_bins(j) = SCORE_NU_FISSION
             if (t % find_filter(FILTER_ENERGYOUT) > 0) then

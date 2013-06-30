@@ -829,6 +829,9 @@ contains
         string = trim(string) // ' absorption'
       case (SCORE_FISSION)
         string = trim(string) // ' fission'
+        write (*,*) '11 output 832: PRINT_TALLY, displays tally attributes, write score bins'
+      case (SCORE_BETA)
+        string = trim(string) // ' beta'
       case (SCORE_NU_FISSION)
         string = trim(string) // ' nu-fission'
       case (SCORE_KAPPA_FISSION)
@@ -1501,6 +1504,8 @@ contains
     filter_name(FILTER_ENERGYOUT) = "Outgoing Energy"
 
     ! Initialize names for scores
+    write (*,*) '12 output 1507: initialize names for scores'
+
     score_names(abs(SCORE_FLUX))          = "Flux"
     score_names(abs(SCORE_TOTAL))         = "Total Reaction Rate"
     score_names(abs(SCORE_SCATTER))       = "Scattering Rate"
@@ -1511,6 +1516,7 @@ contains
     score_names(abs(SCORE_N_1N))          = "(n,1n) Rate"
     score_names(abs(SCORE_ABSORPTION))    = "Absorption Rate"
     score_names(abs(SCORE_FISSION))       = "Fission Rate"
+    score_names(abs(SCORE_BETA))          = "Beta"
     score_names(abs(SCORE_NU_FISSION))    = "Nu-Fission Rate"
     score_names(abs(SCORE_KAPPA_FISSION)) = "Kappa-Fission Rate"
     score_names(abs(SCORE_EVENTS))        = "Events"
