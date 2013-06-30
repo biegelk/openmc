@@ -5,6 +5,7 @@ module output
   use ace_header,      only: Nuclide, Reaction, UrrData
   use constants
   use endf,            only: reaction_name
+  use error,           only: warning
   use geometry_header, only: Cell, Universe, Surface, BASE_UNIVERSE
   use global
   use math,            only: t_percentile
@@ -165,12 +166,12 @@ contains
       write(OUTPUT_UNIT,*) 'Usage: openmc [options] [directory]'
       write(OUTPUT_UNIT,*)
       write(OUTPUT_UNIT,*) 'Options:'
-      write(OUTPUT_UNIT,*) '  -p, --plot      Run in plotting mode'
-      write(OUTPUT_UNIT,*) '  -r, --restart   Restart a previous run'
-      write(OUTPUT_UNIT,*) '  -s, --particle  Run a single particle history'
-      write(OUTPUT_UNIT,*) '  -t, --tallies   Write tally results from state point'
-      write(OUTPUT_UNIT,*) '  -v, --version   Show version information'
-      write(OUTPUT_UNIT,*) '  -?, --help      Show this message'
+      write(OUTPUT_UNIT,*) '  -g, --geometry-debug   Run in geometry debugging mode'
+      write(OUTPUT_UNIT,*) '  -p, --plot             Run in plotting mode'
+      write(OUTPUT_UNIT,*) '  -r, --restart          Restart a previous run from a state point'
+      write(OUTPUT_UNIT,*) '                         or a particle restart file'
+      write(OUTPUT_UNIT,*) '  -v, --version          Show version information'
+      write(OUTPUT_UNIT,*) '  -?, --help             Show this message'
     end if
 
   end subroutine print_usage
@@ -1218,24 +1219,24 @@ contains
 
     if (entropy_on) then
       if (cmfd_run) then
-        message = " Bat./Gen.   k(batch)   Entropy         Average k          CMFD k    CMFD Ent"
+        message = " Bat./Gen.      k       Entropy         Average k          CMFD k    CMFD Ent"
         call write_message(1)
         message = " =========   ========   ========   ====================   ========   ========"
         call write_message(1)
       else
-        message = " Bat./Gen.   k(batch)   Entropy         Average k"
+        message = " Bat./Gen.      k       Entropy         Average k"
         call write_message(1)
         message = " =========   ========   ========   ===================="
         call write_message(1)
       end if
     else
       if (cmfd_run) then
-        message = " Bat./Gen.   k(batch)        Average k          CMFD k"
+        message = " Bat./Gen.      k            Average k          CMFD k"
         call write_message(1)
         message = " =========   ========   ====================   ========"
         call write_message(1)
       else
-        message = " Bat./Gen.   k(batch)        Average k"
+        message = " Bat./Gen.      k            Average k"
         call write_message(1)
         message = " =========   ========   ===================="
         call write_message(1)
@@ -1254,11 +1255,17 @@ contains
     ! write out information about batch and generation
     write(UNIT=OUTPUT_UNIT, FMT='(2X,A9)', ADVANCE='NO') &
          trim(to_str(current_batch)) // "/" // trim(to_str(current_gen))
-    write(UNIT=OUTPUT_UNIT, FMT='(11X)', ADVANCE='NO')
+    write(UNIT=OUTPUT_UNIT, FMT='(3X,F8.5)', ADVANCE='NO') &
+         k_generation(overall_gen)
 
     ! write out entropy info
     if (entropy_on) write(UNIT=OUTPUT_UNIT, FMT='(3X, F8.5)', ADVANCE='NO') &
-         entropy(current_gen + gen_per_batch*(current_batch - 1))
+         entropy(overall_gen)
+
+    if (overall_gen - n_inactive*gen_per_batch > 1) then 
+      write(UNIT=OUTPUT_UNIT, FMT='(3X, F8.5," +/-",F8.5)', ADVANCE='NO') &
+           keff, keff_std
+    end if
 
     ! next line
     write(UNIT=OUTPUT_UNIT, FMT=*)
@@ -1276,14 +1283,14 @@ contains
     write(UNIT=OUTPUT_UNIT, FMT='(2X,A9)', ADVANCE='NO') &
          trim(to_str(current_batch)) // "/" // trim(to_str(gen_per_batch))
     write(UNIT=OUTPUT_UNIT, FMT='(3X,F8.5)', ADVANCE='NO') &
-         k_batch(current_batch)
+         k_generation(overall_gen)
 
     ! write out entropy info
     if (entropy_on) write(UNIT=OUTPUT_UNIT, FMT='(3X, F8.5)', ADVANCE='NO') &
          entropy(current_batch*gen_per_batch)
 
     ! write out accumulated k-effective if after first active batch
-    if (current_batch > n_inactive + 1) then 
+    if (overall_gen - n_inactive*gen_per_batch > 1) then 
       write(UNIT=OUTPUT_UNIT, FMT='(3X, F8.5," +/-",F8.5)', ADVANCE='NO') &
            keff, keff_std
     else
@@ -1378,8 +1385,8 @@ contains
 
   subroutine print_runtime()
 
-    integer(8)    :: total_particles ! total # of particles simulated
-    real(8)       :: speed           ! # of neutrons/second
+    real(8)       :: speed_inactive  ! # of neutrons/second in inactive batches
+    real(8)       :: speed_active    ! # of neutrons/second in active batches
     character(15) :: string
 
     ! display header block
@@ -1402,22 +1409,39 @@ contains
     write(ou,100) "Total time for finalization", time_finalize % elapsed
     write(ou,100) "Total time elapsed", time_total % elapsed
 
+    ! Calculate particle rate in active/inactive batches
     if (restart_run) then
-      total_particles = n_particles * (n_batches - &
-           restart_batch) * gen_per_batch
+      if (restart_batch < n_inactive) then
+        speed_inactive = real(n_particles * (n_inactive - restart_batch) * &
+             gen_per_batch) / time_inactive % elapsed
+        speed_active = real(n_particles * n_active * gen_per_batch) / &
+           time_active % elapsed
+      else
+        speed_inactive = ZERO
+        speed_active = real(n_particles * (n_batches - restart_batch) * &
+             gen_per_batch) / time_active % elapsed
+      end if
     else
-      total_particles = n_particles * n_batches * gen_per_batch
+      if (n_inactive > 0) then
+        speed_inactive = real(n_particles * n_inactive * gen_per_batch) / &
+             time_inactive % elapsed
+      end if
+      speed_active = real(n_particles * n_active * gen_per_batch) / &
+           time_active % elapsed
     end if
 
-    ! display calculate rate
-    speed = real(total_particles) / (time_inactive % elapsed + &
-         time_active % elapsed)
-    string = to_str(speed)
-    write(ou,101) trim(string)
+    ! display calculation rate
+    if (.not. (restart_run .and. (restart_batch >= n_inactive)) &
+         .and. n_inactive > 0) then
+      string = to_str(speed_inactive)
+      write(ou,101) "Calculation Rate (inactive)", trim(string)
+    end if
+    string = to_str(speed_active)
+    write(ou,101) "Calculation Rate (active)", trim(string)
 
     ! format for write statements
 100 format (1X,A,T36,"= ",ES11.4," seconds")
-101 format (1X,"Calculation Rate",T36,"=  ",A," neutrons/second")
+101 format (1X,A,T36,"=  ",A," neutrons/second")
 
   end subroutine print_runtime
 
@@ -1443,24 +1467,74 @@ contains
       global_tallies(:) % sum_sq = t_value * global_tallies(:) % sum_sq
 
       ! Adjust combined estimator
-      k_combined(2) = t_value * k_combined(2)
+      if (n_realizations > 3) then
+        t_value = t_percentile(ONE - alpha/TWO, n_realizations - 3)
+        k_combined(2) = t_value * k_combined(2)
+      end if
     end if
 
     ! write global tallies
-    write(ou,102) "k-effective (Collision)", global_tallies(K_COLLISION) &
-         % sum, global_tallies(K_COLLISION) % sum_sq
-    write(ou,102) "k-effective (Track-length)", global_tallies(K_TRACKLENGTH) &
-         % sum, global_tallies(K_TRACKLENGTH) % sum_sq
-    write(ou,102) "k-effective (Absorption)", global_tallies(K_ABSORPTION) &
-         % sum, global_tallies(K_ABSORPTION) % sum_sq
-    if (n_active > 3) write(ou,102) "Combined k-effective", k_combined
-    write(ou,102) "Leakage Fraction", global_tallies(LEAKAGE) % sum, &
-         global_tallies(LEAKAGE) % sum_sq
+    if (n_realizations > 1) then
+      write(ou,102) "k-effective (Collision)", global_tallies(K_COLLISION) &
+           % sum, global_tallies(K_COLLISION) % sum_sq
+      write(ou,102) "k-effective (Track-length)", global_tallies(K_TRACKLENGTH) &
+           % sum, global_tallies(K_TRACKLENGTH) % sum_sq
+      write(ou,102) "k-effective (Absorption)", global_tallies(K_ABSORPTION) &
+           % sum, global_tallies(K_ABSORPTION) % sum_sq
+      if (n_realizations > 3) write(ou,102) "Combined k-effective", k_combined
+      write(ou,102) "Leakage Fraction", global_tallies(LEAKAGE) % sum, &
+           global_tallies(LEAKAGE) % sum_sq
+    else
+      message = "Could not compute uncertainties -- only one active batch simulated!"
+      call warning()
+
+      write(ou,103) "k-effective (Collision)", global_tallies(K_COLLISION) % sum
+      write(ou,103) "k-effective (Track-length)", global_tallies(K_TRACKLENGTH)  % sum
+      write(ou,103) "k-effective (Absorption)", global_tallies(K_ABSORPTION) % sum
+      write(ou,103) "Leakage Fraction", global_tallies(LEAKAGE) % sum
+    end if
     write(ou,*)
 
 102 format (1X,A,T30,"= ",F8.5," +/- ",F8.5)
+103 format (1X,A,T30,"= ",F8.5)
 
   end subroutine print_results
+
+!===============================================================================
+! PRINT_OVERLAP_DEBUG displays information regarding overlap checking results
+!===============================================================================
+
+  subroutine print_overlap_check
+
+    integer :: i, j
+    integer :: num_sparse = 0
+
+    ! display header block for geometry debugging section
+    call header("Cell Overlap Check Summary")
+
+    write(ou,100) 'Cell ID','No. Overlap Checks'
+
+    do i = 1, n_cells    
+      write(ou,101) cells(i) % id, overlap_check_cnt(i)
+      if (overlap_check_cnt(i) < 10) num_sparse = num_sparse + 1
+    end do
+    write(ou,*)
+    write(ou,'(1X,A)') 'There were ' // trim(to_str(num_sparse)) // &
+                       ' cells with less than 10 overlap checks'
+    j = 0
+    do i = 1, n_cells
+      if (overlap_check_cnt(i) < 10) then
+        j = j + 1
+        write(ou,'(1X,A8)', advance='no') trim(to_str(cells(i) % id))
+        if (modulo(j,8) == 0) write(ou,*)
+      end if
+    end do
+    write(ou,*)
+
+100 format (1X,A,T15,A)
+101 format (1X,I8,T15,I12)
+
+  end subroutine print_overlap_check
 
 !===============================================================================
 ! WRITE_TALLIES creates an output file and writes out the mean values of all
@@ -1522,12 +1596,7 @@ contains
     score_names(abs(SCORE_EVENTS))        = "Events"
 
     ! Create filename for tally output
-    if (run_mode == MODE_TALLIES) then
-      filename = trim(path_output) // "tallies." // &
-           trim(to_str(restart_batch)) // ".out"
-    else
-      filename = trim(path_output) // "tallies.out"
-    end if
+    filename = trim(path_output) // "tallies.out"
 
     ! Open tally file for writing
     open(FILE=filename, UNIT=UNIT_TALLY, STATUS='replace', ACTION='write')
@@ -1541,18 +1610,15 @@ contains
     TALLY_LOOP: do i = 1, n_tallies
       t => tallies(i)
 
-      ! Multiply uncertainty by t-value
       if (confidence_intervals) then
-        do k = 1, size(t % results, 2)
-          do j = 1, size(t % results, 1)
-            ! Calculate t-value for confidence intervals
-            if (confidence_intervals) then
-              alpha = ONE - CONFIDENCE_LEVEL
-              t_value = t_percentile(ONE - alpha/TWO, t % n_realizations - 1)
-            end if
-            t % results(j,k) % sum_sq = t_value * t % results(j,k) % sum_sq
-          end do
-        end do
+        ! Calculate t-value for confidence intervals
+        if (confidence_intervals) then
+          alpha = ONE - CONFIDENCE_LEVEL
+          t_value = t_percentile(ONE - alpha/TWO, t % n_realizations - 1)
+        end if
+
+        ! Multiply uncertainty by t-value
+        t % results % sum_sq = t_value * t % results % sum_sq
       end if
 
       ! Write header block

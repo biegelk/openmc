@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import sys
 
 if len(sys.argv) != 3:
-    print "Must supply element and atom/b-cm"
+    print("Must supply element and atom/b-cm")
     exit
 
 element = sys.argv[1]

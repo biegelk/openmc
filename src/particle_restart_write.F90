@@ -47,11 +47,11 @@ contains
   subroutine write_particle_restart_hdf5()
 
     character(MAX_FILE_LEN) :: filename
-    integer(HSIZE_T)        :: dims1(1)
     type(Bank), pointer     :: src => null()
 
     ! set up file name
-    filename = trim(path_output) // 'particle_'//trim(to_str(rank))//'.h5'
+    filename = trim(path_output) // 'particle_' // trim(to_str(current_batch)) &
+         // '_' // trim(to_str(current_work)) // '.h5'
 
     ! create hdf5 file
     call h5fcreate_f(filename, H5F_ACC_TRUNC_F, hdf5_particle_file, hdf5_err)
@@ -60,11 +60,15 @@ contains
     src => source_bank(current_work)
 
     ! write data to file
+    call hdf5_write_integer(hdf5_particle_file, 'filetype', &
+         FILETYPE_PARTICLE_RESTART)
+    call hdf5_write_integer(hdf5_particle_file, 'revision', &
+         REVISION_PARTICLE_RESTART)
     call hdf5_write_integer(hdf5_particle_file, 'current_batch', current_batch)
     call hdf5_write_integer(hdf5_particle_file, 'gen_per_batch', gen_per_batch)
     call hdf5_write_integer(hdf5_particle_file, 'current_gen', current_gen)
-    call hdf5_write_long(hdf5_particle_file, 'n_particles', n_particles)
-    call hdf5_write_long(hdf5_particle_file, 'id', p % id)
+    call hdf5_write_long(hdf5_particle_file, 'n_particles', n_particles, hdf5_integer8_t)
+    call hdf5_write_long(hdf5_particle_file, 'id', p % id, hdf5_integer8_t)
     call hdf5_write_double(hdf5_particle_file, 'weight', src % wgt)
     call hdf5_write_double(hdf5_particle_file, 'energy', src % E)
     dims1 = (/3/)
@@ -90,7 +94,8 @@ contains
     type(Bank), pointer     :: src => null()
 
     ! set up file name
-    filename = trim(path_output) // 'particle_'//trim(to_str(rank))//'.binary'
+    filename = trim(path_output) // 'particle_' // trim(to_str(current_batch)) &
+         // '_' // trim(to_str(current_work)) // '.binary'
 
     ! create hdf5 file
     open(UNIT=UNIT_PARTICLE, FILE=filename, STATUS='replace', &
@@ -100,6 +105,8 @@ contains
     src => source_bank(current_work)
 
     ! write data to file
+    write(UNIT_PARTICLE) FILETYPE_PARTICLE_RESTART
+    write(UNIT_PARTICLE) REVISION_PARTICLE_RESTART
     write(UNIT_PARTICLE) current_batch
     write(UNIT_PARTICLE) gen_per_batch
     write(UNIT_PARTICLE) current_gen
