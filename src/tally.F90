@@ -564,13 +564,13 @@ contains
                 score = micro_xs(i_nuclide) % fission * &
                      atom_density * flux
 
-              case (SCORE_BETA)
+!              case (SCORE_BETA)
                 ! Fission cross section is pre-calculated
 !                score = micro_xs(i_nuclide) % fission * &
 !                     atom_density * flux
                 ! TEST: fission score * hypothetical uranium beta
-                score = micro_xs(i_nuclide) % fission * &
-                     atom_density * flux * test_beta
+!                score = micro_xs(i_nuclide) % fission * &
+!                     atom_density * flux * test_beta
 
               case (SCORE_NU_FISSION)
                 ! Nu-fission cross section is pre-calculated
@@ -652,9 +652,9 @@ contains
                 ! Fission cross section is pre-calculated
                 score = material_xs % fission * flux
 
-              case (SCORE_BETA)
+!              case (SCORE_BETA)
                 ! Fission cross section is pre-calculated
-                score = material_xs % fission * flux * test_beta
+!                score = material_xs % fission * flux * test_beta
 
               case (SCORE_NU_FISSION)
                 ! Nu-fission cross section is pre-calculated
@@ -812,9 +812,9 @@ contains
           write (*,*) '19 tally 808: determine macroscopic nuclide xs, nuclide tally only'
           score = micro_xs(i_nuclide) % fission * atom_density * flux
 
-        case (SCORE_BETA)
-          score = micro_xs(i_nuclide) % fission * atom_density * flux * &
-               test_beta
+!        case (SCORE_BETA)
+!          score = micro_xs(i_nuclide) % fission * atom_density * flux * &
+!               test_beta
 
         case (SCORE_NU_FISSION)
           score = micro_xs(i_nuclide) % nu_fission * atom_density * flux
@@ -903,8 +903,8 @@ contains
         write (*,*) '20 tally 898: determine macroscopic material xs, nuclide tally only'
         score = material_xs % fission * flux
 
-      case (SCORE_BETA)
-        score = material_xs % fission * flux * test_beta
+!      case (SCORE_BETA)
+!        score = material_xs % fission * flux * test_beta
 
       case (SCORE_NU_FISSION)
         score = material_xs % nu_fission * flux
@@ -1232,9 +1232,9 @@ contains
                   write (*,*) '21 tally 1227: score to mesh cell, determine macro nuclide xs'
                   score = micro_xs(i_nuclide) % fission * &
                        atom_density * flux
-                case (SCORE_BETA)
-                  score = micro_xs(i_nuclide) % fission * &
-                       atom_density * flux * test_beta
+!                case (SCORE_BETA)
+!                  score = micro_xs(i_nuclide) % fission * &
+!                       atom_density * flux * test_beta
                 case (SCORE_NU_FISSION)
                   score = micro_xs(i_nuclide) % nu_fission * &
                        atom_density * flux
@@ -1262,8 +1262,8 @@ contains
                 case (SCORE_FISSION)
                   !write (*,*) '1 tally 1258: score to mesh cell, determine macro material xs'
                   score = material_xs % fission * flux
-                case (SCORE_BETA)
-                  score = material_xs % fission * flux * test_beta
+!                case (SCORE_BETA)
+!                  score = material_xs % fission * flux * test_beta
                 case (SCORE_NU_FISSION)
                   score = material_xs % nu_fission * flux
                 case (SCORE_KAPPA_FISSION)
