@@ -1372,6 +1372,8 @@ contains
     integer :: n_order       ! Scattering order requested
     integer :: n_order_pos   ! Position of Scattering order in score name string
     integer :: MT            ! user-specified MT for score
+    integer :: p             ! t % filters reassignment index
+    integer :: q             ! temp_filters value transfer index
     logical :: file_exists   ! does tallies.xml file exist?
     character(MAX_LINE_LEN) :: filename
     character(MAX_WORD_LEN) :: word
@@ -1380,6 +1382,7 @@ contains
     type(TallyObject),    pointer :: t => null()
     type(StructuredMesh), pointer :: m => null()
     type(TallyFilter), allocatable :: filters(:) ! temporary filters
+    type(TallyFilter), allocatable :: temp_filters(:) ! temp temp filters
 
     ! Check if tallies.xml exists
     filename = trim(path_input) // "tallies.xml"
@@ -1598,7 +1601,8 @@ contains
       end if
 
       if (associated(tally_(i) % filter)) then
-        ! Determine number of filters
+        ! Determine number of filters; counts all user-declared + precursor-
+        ! group filter
         n_filters = size(tally_(i) % filter)
 
         ! Allocate filters array
@@ -2022,15 +2026,32 @@ contains
                    &energy filter."
               call fatal_error()
             end if
-          case ('beta')
-            t % score_bins(j) = SCORE_BETA
+          case ('prompt-fission')
+            t % score_bins(j) = SCORE_PROMPT_FISSION
             if (t % find_filter(FILTER_ENERGYOUT) > 0) then
-              message = "Cannot tally beta with an outgoing energy &
-                   &filter."
-            call fatal_error()
+              message = "Cannot tally prompt fission rate with an &
+                   &outgoing energy filter."
+              call fatal_error()
             end if
-            ! Set tally estimator to analog
             t % estimator = ESTIMATOR_ANALOG
+          case ('delayed-fission')
+            t % score_bins(j) = SCORE_DELAYED_FISSION
+            if (t % find_filter(FILTER_ENERGYOUT) > 0) then
+              message = "Cannot tally delayed fission rate with an &
+                   &outgoing energy filter."
+              call fatal_error()
+            end if
+            t % estimator = ESTIMATOR_ANALOG
+            ! Need to add pg filter to t % filters
+            call move_alloc(t % filters, temp_filters)
+            allocate(t % filters(t % n_filters + 1))
+            do p = 2, n_filters + 1
+              do q = 1, n_filters
+                t % filters(p) = temp_filters(q)
+              end do
+            end do
+            t % filters(1) % type = FILTER_PRECURSOR_GROUP
+            t % filters(1) % n_bins = 6
           case ('nu-fission')
             t % score_bins(j) = SCORE_NU_FISSION
             if (t % find_filter(FILTER_ENERGYOUT) > 0) then

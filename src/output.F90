@@ -830,9 +830,12 @@ contains
         string = trim(string) // ' absorption'
       case (SCORE_FISSION)
         string = trim(string) // ' fission'
-        write (*,*) '11 output 832: PRINT_TALLY, displays tally attributes, write score bins'
-      case (SCORE_BETA)
-        string = trim(string) // ' beta'
+      case (SCORE_PROMPT_FISSION)
+        string = trim(string) // ' prompt-fission'
+      case (SCORE_DELAYED_FISSION)
+        string = trim(string) // ' delayed-fission'
+!      case (SCORE_BETA)
+!        string = trim(string) // ' beta'
       case (SCORE_NU_FISSION)
         string = trim(string) // ' nu-fission'
       case (SCORE_KAPPA_FISSION)
@@ -1580,20 +1583,22 @@ contains
     ! Initialize names for scores
     write (*,*) '12 output 1507: initialize names for scores'
 
-    score_names(abs(SCORE_FLUX))          = "Flux"
-    score_names(abs(SCORE_TOTAL))         = "Total Reaction Rate"
-    score_names(abs(SCORE_SCATTER))       = "Scattering Rate"
-    score_names(abs(SCORE_NU_SCATTER))    = "Scattering Production Rate"
-    score_names(abs(SCORE_SCATTER_N))     = ""
-    score_names(abs(SCORE_SCATTER_PN))    = ""
-    score_names(abs(SCORE_TRANSPORT))     = "Transport Rate"
-    score_names(abs(SCORE_N_1N))          = "(n,1n) Rate"
-    score_names(abs(SCORE_ABSORPTION))    = "Absorption Rate"
-    score_names(abs(SCORE_FISSION))       = "Fission Rate"
-    score_names(abs(SCORE_BETA))          = "Beta"
-    score_names(abs(SCORE_NU_FISSION))    = "Nu-Fission Rate"
-    score_names(abs(SCORE_KAPPA_FISSION)) = "Kappa-Fission Rate"
-    score_names(abs(SCORE_EVENTS))        = "Events"
+    score_names(abs(SCORE_FLUX))             = "Flux"
+    score_names(abs(SCORE_TOTAL))            = "Total Reaction Rate"
+    score_names(abs(SCORE_SCATTER))          = "Scattering Rate"
+    score_names(abs(SCORE_NU_SCATTER))       = "Scattering Production Rate"
+    score_names(abs(SCORE_SCATTER_N))        = ""
+    score_names(abs(SCORE_SCATTER_PN))       = ""
+    score_names(abs(SCORE_TRANSPORT))        = "Transport Rate"
+    score_names(abs(SCORE_N_1N))             = "(n,1n) Rate"
+    score_names(abs(SCORE_ABSORPTION))       = "Absorption Rate"
+    score_names(abs(SCORE_FISSION))          = "Fission Rate"
+    score_names(abs(SCORE_PROMPT_FISSION))   = "Prompt Fission Rate"
+    score_names(abs(SCORE_DELAYED_FISSION))  = "Delayed Fission Rate"
+!    score_names(abs(SCORE_BETA))             = "Beta"
+    score_names(abs(SCORE_NU_FISSION))       = "Nu-Fission Rate"
+    score_names(abs(SCORE_KAPPA_FISSION))    = "Kappa-Fission Rate"
+    score_names(abs(SCORE_EVENTS))           = "Events"
 
     ! Create filename for tally output
     filename = trim(path_output) // "tallies.out"

@@ -16,11 +16,11 @@ include OBJECTS
 # User Options
 #===============================================================================
 
-COMPILER = gnu
+COMPILER = intel
 DEBUG    = no
 PROFILE  = no
 OPTIMIZE = no
-MPI      = no
+MPI      = yes
 HDF5     = no
 PETSC    = no
 
@@ -28,7 +28,7 @@ PETSC    = no
 # External Library Paths
 #===============================================================================
 
-MPI_DIR   = /opt/mpich/3.0.4-$(COMPILER)
+MPI_DIR   = /opt/mpich/3.0.2-$(COMPILER)
 HDF5_DIR  = /opt/hdf5/1.8.11-$(COMPILER)
 PHDF5_DIR = /opt/phdf5/1.8.11-$(COMPILER)
 PETSC_DIR = /opt/petsc/3.3-p6-$(COMPILER)

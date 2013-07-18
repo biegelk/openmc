@@ -119,7 +119,6 @@ contains
           ! Now compare the value against that of the colliding nuclide.
           if (i_nuclide /= p % event_nuclide .and. i_nuclide /= -1) cycle
         end if
-
         ! Determine score for each bin
         j = 0
         SCORE_LOOP: do l = 1, t % n_user_score_bins
@@ -267,17 +266,23 @@ contains
               score = last_wgt
             end if
 
-          case (SCORE_BETA)
-            ! Placeholder for future implementation of beta tally. Currently
-            ! scores fission events.
+           case (SCORE_PROMPT_FISSION)
+             if (p % event /= EVENT_PROMPT_FISSION) cycle SCORE_LOOP
 
-            ! Skip any non-"fission" events
-            if (p % event /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
-            ! Only delayed fission events will contribute, so we can use
-            ! particle's weight entering the collision as the estimate for the
-            ! fission reaction rate
+             ! All prompt-fission events will contribute, so the particle's
+             ! weight entering the collision is scored as the estimate for the
+             ! prompt fission reaction rate
 
-            score = last_wgt
+             score = last_wgt
+
+           case (SCORE_DELAYED_FISSION)
+             if (p % event /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+
+             ! All delayed-fission events will contribute, so the particle's
+             ! weight entering the collision is scored as the estimate for the
+             ! delayed fission reaction rate
+
+             score = last_wgt
 
           case (SCORE_NU_FISSION)
             if (survival_biasing) then
@@ -559,7 +564,6 @@ contains
                      atom_density * flux
 
               case (SCORE_FISSION)
-                write (*,*) '18 tally 561: determine nuclide xs'
                 ! Fission cross section is pre-calculated
                 score = micro_xs(i_nuclide) % fission * &
                      atom_density * flux
@@ -648,7 +652,6 @@ contains
                 score = material_xs % absorption * flux
 
               case (SCORE_FISSION)
-                write (*,*) '19 tally 647: determine material xs'
                 ! Fission cross section is pre-calculated
                 score = material_xs % fission * flux
 
@@ -809,7 +812,6 @@ contains
           score = micro_xs(i_nuclide) % absorption * atom_density * flux
 
         case (SCORE_FISSION)
-          write (*,*) '19 tally 808: determine macroscopic nuclide xs, nuclide tally only'
           score = micro_xs(i_nuclide) % fission * atom_density * flux
 
 !        case (SCORE_BETA)
@@ -900,7 +902,6 @@ contains
         score = material_xs % absorption * flux
 
       case (SCORE_FISSION)
-        write (*,*) '20 tally 898: determine macroscopic material xs, nuclide tally only'
         score = material_xs % fission * flux
 
 !      case (SCORE_BETA)
@@ -1233,7 +1234,6 @@ contains
                   score = micro_xs(i_nuclide) % absorption * &
                        atom_density * flux
                 case (SCORE_FISSION)
-                  write (*,*) '21 tally 1227: score to mesh cell, determine macro nuclide xs'
                   score = micro_xs(i_nuclide) % fission * &
                        atom_density * flux
 !                case (SCORE_BETA)
@@ -1264,7 +1264,6 @@ contains
                 case (SCORE_ABSORPTION)
                   score = material_xs % absorption * flux
                 case (SCORE_FISSION)
-                  !write (*,*) '1 tally 1258: score to mesh cell, determine macro material xs'
                   score = material_xs % fission * flux
 !                case (SCORE_BETA)
 !                  score = material_xs % fission * flux * test_beta

@@ -1,3 +1,7 @@
+! Saved state: EVENT_FISSION is assigned after sampling for prompt or delayed
+! fission. No discernment is made between prompt and delayed fission reactions.
+
+
 module physics
 
   use ace_header,             only: Nuclide, Reaction, DistEnergy
@@ -7,8 +11,7 @@ module physics
   use error,                  only: fatal_error, warning
   use fission,                only: nu_total, nu_delayed
   use geometry,               only: find_cell, distance_to_boundary, &
-                                    cross_surface, cross_lattice,    &
-                                    check_cell_overlap
+                                    cross_surface, cross_lattice
   use geometry_header,        only: Universe, BASE_UNIVERSE
   use global
   use interpolation,          only: interpolate_tab1
@@ -57,6 +60,7 @@ contains
 
       ! Particle couldn't be located
       if (.not. found_cell) then
+        call write_particle_restart()
         message = "Could not locate particle " // trim(to_str(p % id))
         call fatal_error()
       end if
@@ -75,8 +79,6 @@ contains
     micro_xs % last_E = ZERO
 
     do while (p % alive)
-
-      if (check_overlaps) call check_cell_overlap()
 
       ! Calculate microscopic and macroscopic cross sections -- note: if the
       ! material is the same as the last material and the energy of the
@@ -247,7 +249,6 @@ contains
     real(8) :: prob         ! cumulative probability
     real(8) :: cutoff       ! random number
     real(8) :: atom_density ! atom density of nuclide in atom/b-cm
-    integer :: rxn_result   ! indicates delayed or prompt fission
     type(Material), pointer :: mat => null()
     type(Nuclide),  pointer :: nuc => null()
     type(Reaction), pointer :: rxn => null()
@@ -335,6 +336,8 @@ contains
     ! ==========================================================================
     ! FISSION EVENTS (ANALOG) OR BANK EXPECTED FISSION SITES (IMPLICIT)
 
+    !write (*,*) '2 physics 335: sample for fission event'
+
     if (nuc % fissionable) then
       ! If survival biasing is turned on, then no fission events actually occur
       ! since absorption is treated implicitly. However, we still need to bank
@@ -356,7 +359,7 @@ contains
 
         if (prob > cutoff) then
           rxn => nuc % reactions(nuc % index_fission(1))
-          call create_fission_sites(i_nuclide, rxn, rxn_result)
+          call create_fission_sites(i_nuclide, rxn)
 
           ! With no survival biasing, the particle is absorbed and so its
           ! life is over
@@ -369,8 +372,7 @@ contains
                  material_xs % nu_fission / material_xs % absorption
 
             p % alive = .false.
-!            p % event = EVENT_FISSION
-            p % event = rxn_result
+            p % event = EVENT_FISSION
             p % event_MT = rxn % MT
             return
           end if
@@ -395,9 +397,9 @@ contains
             prob = prob + micro_xs(i_nuclide) % fission
           end if
 
-          ! Create fission bank sites if fission occurs
+          ! Create fission bank sites if fission occus
           if (prob > cutoff) then
-            call create_fission_sites(i_nuclide, rxn, rxn_result)
+            call create_fission_sites(i_nuclide, rxn)
 
             if (survival_biasing) then
               ! Since a fission reaction has been sampled, we can exit this
@@ -414,7 +416,7 @@ contains
               ! With no survival biasing, the particle is absorbed and so
               ! its life is over
               p % alive = .false.
-              p % event = rxn_result
+              p % event = EVENT_FISSION
               p % event_MT = rxn % MT
               return
             end if
@@ -861,11 +863,10 @@ contains
 ! neutrons produced from fission and creates appropriate bank sites.
 !===============================================================================
 
-  subroutine create_fission_sites(i_nuclide, rxn, rxn_result)
+  subroutine create_fission_sites(i_nuclide, rxn)
 
     integer, intent(in)     :: i_nuclide
     type(Reaction), pointer :: rxn
-    integer, intent(out) :: rxn_result
 
     integer :: i            ! loop index
     integer :: j            ! index on nu energy grid / precursor group
@@ -888,9 +889,10 @@ contains
     real(8) :: prob         ! cumulative probability
     real(8) :: weight       ! weight adjustment for ufs method
     logical :: in_mesh      ! source site in ufs mesh?
-    
     type(Nuclide),    pointer :: nuc
     type(DistEnergy), pointer :: edist => null()
+
+    !write (*,*) '5 physics 891: create fission sites'
 
     ! Get pointer to nuclide
     nuc => nuclides(i_nuclide)
@@ -906,6 +908,7 @@ contains
 
     ! Determine delayed neutron fraction
     beta = nu_d / nu_t
+!    write (*,*) beta
 
     ! TODO: Heat generation from fission
 
@@ -1020,8 +1023,6 @@ contains
           end if
         end do
 
-        rxn_result = EVENT_DELAYED_FISSION
-
       else
         ! ====================================================================
         ! PROMPT NEUTRON SAMPLED
@@ -1048,8 +1049,6 @@ contains
             call fatal_error()
           end if
         end do
-
-        rxn_result = EVENT_PROMPT_FISSION
 
       end if
 

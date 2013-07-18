@@ -264,21 +264,24 @@ module constants
   ! Tally score type
   integer, parameter :: N_SCORE_TYPES = 14
   integer, parameter :: &
-       SCORE_FLUX          = -1,  & ! flux
-       SCORE_TOTAL         = -2,  & ! total reaction rate
-       SCORE_SCATTER       = -3,  & ! scattering rate
-       SCORE_NU_SCATTER    = -4,  & ! scattering production rate
-       SCORE_SCATTER_N     = -5,  & ! arbitrary scattering moment
-       SCORE_SCATTER_PN    = -6,  & ! system for scoring 0th through nth moment
-       SCORE_TRANSPORT     = -7,  & ! transport reaction rate
-       SCORE_N_1N          = -8,  & ! (n,1n) rate
-       SCORE_ABSORPTION    = -9,  & ! absorption rate
-       SCORE_FISSION       = -10, & ! fission rate
-       SCORE_NU_FISSION    = -11, & ! neutron production rate
-       SCORE_KAPPA_FISSION = -12, & ! fission energy production rate
-       SCORE_CURRENT       = -13, & ! partial current
-       SCORE_EVENTS        = -14, & ! number of events
-       SCORE_BETA          = -15    ! beta
+       SCORE_FLUX             = -1,  & ! flux
+       SCORE_TOTAL            = -2,  & ! total reaction rate
+       SCORE_SCATTER          = -3,  & ! scattering rate
+       SCORE_NU_SCATTER       = -4,  & ! scattering production rate
+       SCORE_SCATTER_N        = -5,  & ! arbitrary scattering moment
+       SCORE_SCATTER_PN       = -6,  & ! system for scoring 0th through nth moment
+       SCORE_TRANSPORT        = -7,  & ! transport reaction rate
+       SCORE_N_1N             = -8,  & ! (n,1n) rate
+       SCORE_ABSORPTION       = -9,  & ! absorption rate
+       SCORE_FISSION          = -10, & ! fission rate
+       SCORE_NU_FISSION       = -11, & ! neutron production rate
+       SCORE_KAPPA_FISSION    = -12, & ! fission energy production rate
+       SCORE_CURRENT          = -13, & ! partial current
+       SCORE_EVENTS           = -14, & ! number of events
+!       SCORE_BETA             = -15, & ! beta
+       SCORE_PROMPT_FISSION   = -16, & ! prompt fission rate
+       SCORE_DELAYED_FISSION  = -17    ! delayed fission rate
+       
 
   ! Maximum scattering order supported
   integer, parameter :: SCATT_ORDER_MAX = 10
@@ -297,7 +300,8 @@ module constants
        FILTER_SURFACE   = 5, &
        FILTER_MESH      = 6, &
        FILTER_ENERGYIN  = 7, &
-       FILTER_ENERGYOUT = 8
+       FILTER_ENERGYOUT = 8, &
+       FILTER_PRECURSOR_GROUP = 9
 
   ! Tally surface current directions
   integer, parameter :: &
