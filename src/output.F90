@@ -830,10 +830,10 @@ contains
         string = trim(string) // ' absorption'
       case (SCORE_FISSION)
         string = trim(string) // ' fission'
-      case (SCORE_PROMPT_FISSION)
-        string = trim(string) // ' prompt-fission'
-      case (SCORE_DELAYED_FISSION)
-        string = trim(string) // ' delayed-fission'
+!      case (SCORE_PROMPT_FISSION)
+!        string = trim(string) // ' prompt-fission'
+!      case (SCORE_DELAYED_FISSION)
+!        string = trim(string) // ' delayed-fission'
 !      case (SCORE_BETA)
 !        string = trim(string) // ' beta'
       case (SCORE_NU_FISSION)
@@ -1300,7 +1300,6 @@ contains
       write(UNIT=OUTPUT_UNIT, FMT='(23X)', ADVANCE='NO')
     end if
 
-
     ! write out cmfd keff if it is active
     if (cmfd_on) write(UNIT=OUTPUT_UNIT, FMT='(3X, F8.5)', ADVANCE='NO') &
          cmfd % keff 
@@ -1551,6 +1550,7 @@ contains
     integer :: k            ! loop index for scoring bins
     integer :: n            ! loop index for nuclides
     integer :: l            ! loop index for user scores
+    integer :: p
     integer :: type         ! type of tally filter        
     integer :: indent       ! number of spaces to preceed output
     integer :: filter_index ! index in results array for filters
@@ -1579,9 +1579,7 @@ contains
     filter_name(FILTER_MESH)      = "Mesh"
     filter_name(FILTER_ENERGYIN)  = "Incoming Energy"
     filter_name(FILTER_ENERGYOUT) = "Outgoing Energy"
-
-    ! Initialize names for scores
-    write (*,*) '12 output 1507: initialize names for scores'
+    filter_name(FILTER_PRECURSOR_GROUP) = "Beta-i"
 
     score_names(abs(SCORE_FLUX))             = "Flux"
     score_names(abs(SCORE_TOTAL))            = "Total Reaction Rate"
@@ -1593,8 +1591,8 @@ contains
     score_names(abs(SCORE_N_1N))             = "(n,1n) Rate"
     score_names(abs(SCORE_ABSORPTION))       = "Absorption Rate"
     score_names(abs(SCORE_FISSION))          = "Fission Rate"
-    score_names(abs(SCORE_PROMPT_FISSION))   = "Prompt Fission Rate"
-    score_names(abs(SCORE_DELAYED_FISSION))  = "Delayed Fission Rate"
+!    score_names(abs(SCORE_PROMPT_FISSION))   = "Prompt Fission Rate"
+!    score_names(abs(SCORE_DELAYED_FISSION))  = "Delayed Fission Rate"
 !    score_names(abs(SCORE_BETA))             = "Beta"
     score_names(abs(SCORE_NU_FISSION))       = "Nu-Fission Rate"
     score_names(abs(SCORE_KAPPA_FISSION))    = "Kappa-Fission Rate"

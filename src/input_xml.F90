@@ -2026,14 +2026,6 @@ contains
                    &energy filter."
               call fatal_error()
             end if
-          case ('prompt-fission')
-            t % score_bins(j) = SCORE_PROMPT_FISSION
-            ! Set tally estimator to analog
-            t % estimator = ESTIMATOR_ANALOG
-          case ('delayed-fission')
-            t % score_bins(j) = SCORE_DELAYED_FISSION
-            ! Set tally estimator to analog
-            t % estimator = ESTIMATOR_ANALOG
             ! Need to add pg filter to t % filters
             call move_alloc(t % filters, temp_filters)
             t % n_filters = t % n_filters + 1
@@ -2042,6 +2034,22 @@ contains
             deallocate(temp_filters)
             t % filters(1) % type = FILTER_PRECURSOR_GROUP
             t % filters(1) % n_bins = 6
+!          case ('prompt-fission')
+!            t % score_bins(j) = SCORE_PROMPT_FISSION
+            ! Set tally estimator to analog
+!            t % estimator = ESTIMATOR_ANALOG
+!          case ('delayed-fission')
+!            t % score_bins(j) = SCORE_DELAYED_FISSION
+            ! Set tally estimator to analog
+!            t % estimator = ESTIMATOR_ANALOG
+            ! Need to add pg filter to t % filters
+!            call move_alloc(t % filters, temp_filters)
+!            t % n_filters = t % n_filters + 1
+!            allocate(t % filters(t % n_filters))
+!            t % filters(2 : t % n_filters) = temp_filters
+!            deallocate(temp_filters)
+!            t % filters(1) % type = FILTER_PRECURSOR_GROUP
+!            t % filters(1) % n_bins = 6
           case ('nu-fission')
             t % score_bins(j) = SCORE_NU_FISSION
             if (t % find_filter(FILTER_ENERGYOUT) > 0) then

@@ -163,6 +163,7 @@ contains
             call write_data(t % filters(j) % real_bins, "bins", &
                  group="tallies/tally" // trim(to_str(i)) // "/filter" // to_str(j), &
                  length=size(t % filters(j) % real_bins))
+!          else if (t % filters(j) % type == FILTER_PRECURSOR_GROUP) cycle
           else
             call write_data(t % filters(j) % int_bins, "bins", &
                  group="tallies/tally" // trim(to_str(i)) // "/filter" // to_str(j), &

@@ -48,6 +48,7 @@ module particle_header
     real(8)    :: wgt           ! particle weight
     real(8)    :: E             ! energy
     real(8)    :: mu            ! angle of scatter
+    integer    :: precursor_group  ! precursor group; defaults to 0 for prompt
     logical    :: alive         ! is particle alive?
 
     ! Pre-collision physical data

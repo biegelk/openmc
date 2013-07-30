@@ -247,7 +247,6 @@ contains
     real(8) :: prob         ! cumulative probability
     real(8) :: cutoff       ! random number
     real(8) :: atom_density ! atom density of nuclide in atom/b-cm
-    integer :: rxn_result   ! indicates delayed or prompt fission
     type(Material), pointer :: mat => null()
     type(Nuclide),  pointer :: nuc => null()
     type(Reaction), pointer :: rxn => null()
@@ -356,7 +355,7 @@ contains
 
         if (prob > cutoff) then
           rxn => nuc % reactions(nuc % index_fission(1))
-          call create_fission_sites(i_nuclide, rxn, rxn_result)
+          call create_fission_sites(i_nuclide, rxn)
 
           ! With no survival biasing, the particle is absorbed and so its
           ! life is over
@@ -369,8 +368,7 @@ contains
                  material_xs % nu_fission / material_xs % absorption
 
             p % alive = .false.
-!            p % event = EVENT_FISSION
-            p % event = rxn_result
+            p % event = EVENT_FISSION
             p % event_MT = rxn % MT
             return
           end if
@@ -397,7 +395,7 @@ contains
 
           ! Create fission bank sites if fission occurs
           if (prob > cutoff) then
-            call create_fission_sites(i_nuclide, rxn, rxn_result)
+            call create_fission_sites(i_nuclide, rxn)
 
             if (survival_biasing) then
               ! Since a fission reaction has been sampled, we can exit this
@@ -414,7 +412,7 @@ contains
               ! With no survival biasing, the particle is absorbed and so
               ! its life is over
               p % alive = .false.
-              p % event = rxn_result
+              p % event = EVENT_FISSION
               p % event_MT = rxn % MT
               return
             end if
@@ -861,11 +859,10 @@ contains
 ! neutrons produced from fission and creates appropriate bank sites.
 !===============================================================================
 
-  subroutine create_fission_sites(i_nuclide, rxn, rxn_result)
+  subroutine create_fission_sites(i_nuclide, rxn)
 
     integer, intent(in)     :: i_nuclide
     type(Reaction), pointer :: rxn
-    integer, intent(out) :: rxn_result
 
     integer :: i            ! loop index
     integer :: j            ! index on nu energy grid / precursor group
@@ -959,6 +956,9 @@ contains
       ! a uniform distribution in mu
       mu = TWO * prn() - ONE
 
+      ! Set default precursor group to 0 (prompt fission)
+      j = 0
+
       ! sample between delayed and prompt neutrons
       if (prn() < beta) then
         ! ====================================================================
@@ -1020,8 +1020,6 @@ contains
           end if
         end do
 
-        rxn_result = EVENT_DELAYED_FISSION
-
       else
         ! ====================================================================
         ! PROMPT NEUTRON SAMPLED
@@ -1049,8 +1047,6 @@ contains
           end if
         end do
 
-        rxn_result = EVENT_PROMPT_FISSION
-
       end if
 
       ! Sample azimuthal angle uniformly in [0,2*pi)
@@ -1059,8 +1055,11 @@ contains
       fission_bank(i) % uvw(2) = sqrt(ONE - mu*mu) * cos(phi)
       fission_bank(i) % uvw(3) = sqrt(ONE - mu*mu) * sin(phi)
 
-      ! set energy of fission neutron
+      ! Set energy of fission neutron
       fission_bank(i) % E = E_out
+
+      ! Set precursor group of fission neutron
+      fission_bank(i) % precursor_group = j
     end do
 
     ! increment number of bank sites
@@ -1069,6 +1068,7 @@ contains
     ! Store total weight banked for analog fission tallies
     p % n_bank   = nu
     p % wgt_bank = nu/weight
+    p % event    = EVENT_FISSION
 
   end subroutine create_fission_sites
 

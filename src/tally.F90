@@ -256,8 +256,9 @@ contains
 
             else
               ! Skip any non-fission events
-              if (p % event /= EVENT_PROMPT_FISSION .and. p % event &
-                   /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+!              if (p % event /= EVENT_PROMPT_FISSION .and. p % event &
+!                   /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+              if (p % event /= EVENT_FISSION) cycle SCORE_LOOP
 
               ! All fission events will contribute, so again we can use
               ! particle's weight entering the collision as the estimate for the
@@ -266,23 +267,23 @@ contains
               score = last_wgt
             end if
 
-           case (SCORE_PROMPT_FISSION)
-             if (p % event /= EVENT_PROMPT_FISSION) cycle SCORE_LOOP
+!           case (SCORE_PROMPT_FISSION)
+!             if (p % event /= EVENT_PROMPT_FISSION) cycle SCORE_LOOP
 
              ! All prompt-fission events will contribute, so the particle's
              ! weight entering the collision is scored as the estimate for the
              ! prompt fission reaction rate
 
-             score = last_wgt
+!             score = last_wgt
 
-           case (SCORE_DELAYED_FISSION)
-             if (p % event /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+!           case (SCORE_DELAYED_FISSION)
+!             if (p % event /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
 
              ! All delayed-fission events will contribute, so the particle's
              ! weight entering the collision is scored as the estimate for the
              ! delayed fission reaction rate
 
-             score = last_wgt
+!             score = last_wgt
 
           case (SCORE_NU_FISSION)
             if (survival_biasing) then
@@ -295,8 +296,9 @@ contains
 
             else
               ! Skip any non-fission events
-              if (p % event /= EVENT_PROMPT_FISSION .or. p % event &
-                   /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+!              if (p % event /= EVENT_PROMPT_FISSION .or. p % event &
+!                   /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+              if (p % event /= EVENT_FISSION) cycle SCORE_LOOP
 
               if (t % find_filter(FILTER_ENERGYOUT) > 0) then
                 ! Normally, we only need to make contributions to one scoring
@@ -332,8 +334,9 @@ contains
               
             else
               ! Skip any non-fission events
-              if (p % event /= EVENT_PROMPT_FISSION .or. p % event &
-                   /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+!              if (p % event /= EVENT_PROMPT_FISSION .or. p % event &
+!                   /= EVENT_DELAYED_FISSION) cycle SCORE_LOOP
+              if (p % event /= EVENT_FISSION) cycle SCORE_LOOP
 
               ! All fission events will contribute, so again we can use
               ! particle's weight entering the collision as the estimate for
@@ -414,6 +417,9 @@ contains
     do k = 1, p % n_bank
       ! determine score based on bank site weight and keff
       score = keff * fission_bank(n_bank - p % n_bank + k) % wgt
+!      if (fission_bank(n_bank - p % n_bank + k) % precursor_group /= 0) then
+!        write (*,*) fission_bank(n_bank - p % n_bank + k) % precursor_group
+!      end if
 
       ! determine outgoing energy from fission bank
       E_out = fission_bank(n_bank - p % n_bank + k) % E
